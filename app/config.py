@@ -1,0 +1,20 @@
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
+
+class Config:
+    # Database configuration
+    SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL")
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+    # File upload configuration
+    UPLOAD_FOLDER = "uploads"
+    ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif"}
+    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16 MB limit
+
+    # Ensure upload folder exists
+    if not os.path.exists(UPLOAD_FOLDER):
+        os.makedirs(UPLOAD_FOLDER)
