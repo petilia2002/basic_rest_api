@@ -44,7 +44,7 @@ class PostService:
         return new_post
 
     @staticmethod
-    def update_post(post_id, post, file):
+    def update_post(post_id, new_post, file):
         # Get old post for update
         post = Post.query.get(post_id)
         if not post:
@@ -52,9 +52,9 @@ class PostService:
 
         # Get fields to update
         author, title, content = (
-            post.get("author"),
-            post.get("title"),
-            post.get("content"),
+            new_post.get("author"),
+            new_post.get("title"),
+            new_post.get("content"),
         )
 
         if not all([author, title, content]):
@@ -64,7 +64,9 @@ class PostService:
 
         # Handle file upload (only for form-data)
         image_filename = (
-            FileService.save_uploaded_file(file) if file else post.get("image_filename")
+            FileService.save_uploaded_file(file)
+            if file
+            else new_post.get("image_filename")
         )
 
         # Delete associated image if it exists
