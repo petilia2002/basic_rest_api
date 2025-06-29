@@ -1,7 +1,5 @@
 from app.db.models import db, Post
-from app.config import Config
 from app.services.fileService import FileService
-import os
 
 
 class PostService:

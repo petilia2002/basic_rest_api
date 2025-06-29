@@ -1,9 +1,6 @@
 from flask import jsonify
-from werkzeug.utils import secure_filename
 from app.services.postService import PostService
 from app.utils.request_parser import parse_request
-from app.config import Config
-import os
 
 
 class PostController:
