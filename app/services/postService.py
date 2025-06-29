@@ -1,6 +1,6 @@
-from datetime import datetime
 from app.db.models import db, Post
 from app.config import Config
+from app.services.fileService import FileService
 import os
 
 
@@ -14,58 +14,87 @@ class PostService:
         return Post.query.get(post_id)
 
     @staticmethod
-    def create_post(author, title, content, image_filename=None):
+    def create_post(post, file):
+        # Get required fields
+        author, title, content = (
+            post.get("author"),
+            post.get("title"),
+            post.get("content"),
+        )
+
+        if not all([author, title, content]):
+            raise Exception("Missing required fields")
+
+        # Handle file upload (only for form-data)
+        image_filename = (
+            FileService.save_uploaded_file(file) if file else post.get("image_filename")
+        )
+
         new_post = Post(
             author=author, title=title, content=content, image_filename=image_filename
         )
-        db.session.add(new_post)
-        db.session.commit()
+
+        try:
+            db.session.add(new_post)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            raise
+
         return new_post
 
     @staticmethod
-    def update_post(
-        post_id, author=None, title=None, content=None, image_filename=None
-    ):
+    def update_post(post_id, post, file):
+        # Get old post for update
         post = Post.query.get(post_id)
         if not post:
             return None
 
-        if author is not None:
-            post.author = author
-        if title is not None:
-            post.title = title
-        if content is not None:
-            post.content = content
-        if image_filename is not None:
-            # Delete old image if it exists
-            if post.image_filename:
-                old_image_path = os.path.join(Config.UPLOAD_FOLDER, post.image_filename)
-                if os.path.exists(old_image_path):
-                    os.remove(old_image_path)
-            post.image_filename = image_filename
+        # Get fields to update
+        author, title, content = (
+            post.get("author"),
+            post.get("title"),
+            post.get("content"),
+        )
 
-        db.session.commit()
+        if not all([author, title, content]):
+            raise Exception("Missing required fields")
+        else:
+            post.author, post.title, post.content = author, title, content
+
+        # Handle file upload (only for form-data)
+        image_filename = (
+            FileService.save_uploaded_file(file) if file else post.get("image_filename")
+        )
+
+        # Delete associated image if it exists
+        if post.image_filename:
+            FileService.delete_file(post.image_filename)
+        post.image_filename = image_filename
+
+        try:
+            db.session.commit()
+            db.session.refresh(post)
+        except Exception:
+            db.session.rollback()
+            raise
+
         return post
 
     @staticmethod
     def delete_post(post_id):
         post = Post.query.get(post_id)
         if not post:
-            return False
+            return None
 
         # Delete associated image if it exists
         if post.image_filename:
-            image_path = os.path.join(Config.UPLOAD_FOLDER, post.image_filename)
-            if os.path.exists(image_path):
-                os.remove(image_path)
+            FileService.delete_file(post.image_filename)
 
-        db.session.delete(post)
-        db.session.commit()
-        return True
-
-    @staticmethod
-    def allowed_file(filename):
-        return (
-            "." in filename
-            and filename.rsplit(".", 1)[1].lower() in Config.ALLOWED_EXTENSIONS
-        )
+        try:
+            db.session.delete(post)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            raise
+        return post

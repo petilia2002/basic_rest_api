@@ -16,7 +16,6 @@ class Config:
     # File upload configuration
     UPLOAD_FOLDER = "uploads"
     ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif"}
-    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16 MB limit
 
     # Ensure upload folder exists
     if not os.path.exists(UPLOAD_FOLDER):
