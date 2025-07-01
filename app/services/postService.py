@@ -13,24 +13,25 @@ class PostService:
 
     @staticmethod
     def create_post(post, file):
-        # Get required fields
-        author, title, content = (
-            post.get("author"),
-            post.get("title"),
-            post.get("content"),
-        )
 
-        if not all([author, title, content]):
-            raise Exception("Missing required fields")
+        model_fields = {field: post.get(field) for field in Post.get_updatable_fields()}
+
+        missing_fields = [
+            field
+            for field in Post.get_required_fields()
+            if field not in model_fields or model_fields[field] is None
+        ]
+
+        if missing_fields:
+            raise Exception(f"Missing required fields: {missing_fields}")
 
         # Handle file upload (only for form-data)
         image_filename = (
             FileService.save_uploaded_file(file) if file else post.get("image_filename")
         )
 
-        new_post = Post(
-            author=author, title=title, content=content, image_filename=image_filename
-        )
+        model_fields["image_filename"] = image_filename
+        new_post = Post(**model_fields)
 
         try:
             db.session.add(new_post)
@@ -48,17 +49,18 @@ class PostService:
         if not post:
             return None
 
-        # Get fields to update
-        author, title, content = (
-            new_post.get("author"),
-            new_post.get("title"),
-            new_post.get("content"),
-        )
+        missing_fields = [
+            field
+            for field in Post.get_required_fields()
+            if field not in new_post or new_post[field] is None
+        ]
 
-        if not all([author, title, content]):
-            raise Exception("Missing required fields")
+        if missing_fields:
+            raise Exception(f"Missing required fields: {missing_fields}")
         else:
-            post.author, post.title, post.content = author, title, content
+            for field in Post.get_updatable_fields():
+                if field in new_post:
+                    setattr(post, field, new_post[field])
 
         # Handle file upload (only for form-data)
         image_filename = (

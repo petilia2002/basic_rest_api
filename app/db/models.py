@@ -4,8 +4,25 @@ from flask_sqlalchemy import SQLAlchemy
 db = SQLAlchemy()
 
 
-class Post(db.Model):
+class UpdatableMixin:
+    __updatable_fields__ = []  # переопределяется в дочерних классах
+
+    @classmethod
+    def get_updatable_fields(cls):
+        return cls.__updatable_fields__
+
+    @classmethod
+    def get_required_fields(cls):
+        return [
+            col.name
+            for col in cls.__table__.columns
+            if not col.nullable and not col.primary_key
+        ]
+
+
+class Post(db.Model, UpdatableMixin):
     __tablename__ = "posts"
+    __updatable_fields__ = ["author", "title", "content"]
 
     id = db.Column(db.Integer, primary_key=True)
     author = db.Column(db.String(100), nullable=False)
